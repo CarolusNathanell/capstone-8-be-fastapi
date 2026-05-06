@@ -14,7 +14,7 @@ class DetectorRunner:
     Each runner owns its own FrameManager and operates on a single camera source.
     """
 
-    def __init__(self, id: UUID, type_source: str, url: str | None, model_name: str = "yolo"):
+    def __init__(self, id: UUID, type_source: str, url: str | None, model_name: str = "rfdetr"):
         self.id = id
         self.type_source = type_source
         self.url = url
@@ -58,20 +58,15 @@ class DetectorRunner:
     def _load_model(self):
         """Load the AI model (runs inside the background thread)."""
         print(f"[DETECTOR {self.id}] Loading model: {self.model_name}...")
-        if self.model_name == "yolo":
-            from ultralytics import YOLO
+        from rfdetr import RFDETRSmall
 
-            self._model = YOLO("yolo.pt")
-        else:
-            from rfdetr import RFDETRSmall
-
-            self._model = RFDETRSmall(
-                pretrain_weights="checkpoint_best_total.pth",
-                num_classes=2,
-                num_queries=500,
-                num_select=500
-            )
-            self._model.optimize_for_inference()
+        self._model = RFDETRSmall(
+            pretrain_weights="checkpoint_best_total.pth",
+            num_classes=2,
+            num_queries=500,
+            num_select=500
+        )
+        self._model.optimize_for_inference()
         print(f"[DETECTOR {self.id}] Model loaded successfully")
 
     def _run_loop(self, on_detection, on_snapshot):
@@ -136,26 +131,14 @@ class DetectorRunner:
 
     def _detect(self, frame):
         """Run detection on a single frame. Returns (annotated_frame, head_count)."""
-        if self.model_name == "yolo":
-            result = self._model.track(frame, persist=True)
-            annotated = result[0].plot()
-            boxes = result[0].boxes
-            count = (
-                int((boxes.cls == 1).sum())
-                if boxes is not None and boxes.cls is not None
-                else 0
-            )
-            return annotated, count
-        else:
-            import supervision as sv
+        import supervision as sv
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        detections = self._model.predict(frame_rgb, threshold=0.5)
+        count = sum(1 for c in detections.class_id if c == 1)
+        labels = ["person" for _ in detections.class_id]
 
-            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            detections = self._model.predict(frame_rgb, threshold=0.5)
-            count = sum(1 for c in detections.class_id if c == 1)
-            labels = ["person" for _ in detections.class_id]
-
-            box_ann = sv.BoxAnnotator()
-            label_ann = sv.LabelAnnotator()
-            annotated = box_ann.annotate(frame_rgb, detections)
-            annotated = label_ann.annotate(annotated, detections, labels)
-            return annotated, count
+        box_ann = sv.BoxAnnotator()
+        label_ann = sv.LabelAnnotator()
+        annotated = box_ann.annotate(frame_rgb, detections)
+        annotated = label_ann.annotate(annotated, detections, labels)
+        return annotated, count
