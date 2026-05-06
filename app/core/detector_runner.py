@@ -45,7 +45,13 @@ class DetectorRunner:
         self._running = False
         if self._thread:
             self._thread.join(timeout=5)
-            print(f"[DETECTOR {self.id}] Stopped")
+            alive = self._thread.is_alive()
+            if alive:
+                print(f"[DETECTOR {self.id}] Stop timed out — thread still running")
+            else:
+                print(f"[DETECTOR {self.id}] Stopped")
+            return not alive  # True = stopped clean, False = timeout
+        return True
 
     def get_jpeg(self) -> bytes | None:
         """Get the latest JPEG frame from this runner's FrameManager."""
@@ -96,10 +102,13 @@ class DetectorRunner:
         print(f"[DETECTOR {self.id}] Camera opened, starting detection loop")
         last_time = 0
         interval_start = time.time()
+        cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
 
         while self._running:
             ret, frame = cap.read()
             if not ret:
+                if not self._running:
+                    break 
                 time.sleep(0.1)
                 continue
 
@@ -110,6 +119,8 @@ class DetectorRunner:
             # Run inference
             try:
                 annotated_frame, head_count = self._detect(frame)
+                if not self._running:
+                    break
             except Exception as e:
                 print(f"[DETECTOR {self.id}] Inference error: {e}")
                 continue

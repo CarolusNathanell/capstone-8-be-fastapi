@@ -47,7 +47,7 @@ class DetectionSource:
             url=camera_url,
             fps=13
         )
-
+            
     def get_runner(self, id: str) -> DetectorRunner | None:
         """Get a runner by source ID. Returns None if not found."""
         return self._runners.get(str(id))
