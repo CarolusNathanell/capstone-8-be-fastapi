@@ -23,15 +23,11 @@ class DetectionSource:
         Returns False if a runner with the same ID already exists.
         """
         key = str(id)
+        exists: bool
+        exists=False
         with self._lock:
             if key in self._runners:
-                return ProbeResponse(
-                    exists=True,
-                    detail="Source already exist",
-                    url="",
-                    resolution="",
-                    fps=0
-                )
+                exists = True
             runner = DetectorRunner(id=id, type_source=type_source, url=url)
             runner.start(
                 on_detection_callback=sender_service.handle_detection,
@@ -41,7 +37,7 @@ class DetectionSource:
         print(f"[DETECTION_SOURCE] Runner added for source {id}")
         camera_url = f"http://localhost:8000/camera/stream/{id}"
         return ProbeResponse(
-            exists=False,
+            exists=exists,
             detail="Source added",
             resolution="720p",
             url=camera_url,

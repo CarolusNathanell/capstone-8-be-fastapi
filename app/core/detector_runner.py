@@ -90,9 +90,13 @@ class DetectorRunner:
                 return
             source = self.url
         else:
-            source = os.getenv("CAMERA_SOURCE", "0")
-            source = int(source) if source.isdigit() else source
-
+            if self.url is None:
+                print(f"[DETECTOR {self.id}] Source has no URL, aborting")
+                return
+            source = self.url
+            # source = os.getenv("CAMERA_SOURCE", "0")
+            # source = int(source) if source.isdigit() else source
+            
         cap = cv2.VideoCapture(source)
 
         if not cap.isOpened():

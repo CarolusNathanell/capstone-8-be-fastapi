@@ -27,7 +27,7 @@ class SenderService:
 
     def handle_snapshot(self, source_id: UUID, head_count: int, frame):
         """Called directly by detector thread to send snapshot to BE Core."""
-        filename = f'snapshots/photo_{datetime.now().strftime("%Y%m%d_%H%M%S")}.png'
+        filename = f'photo_{datetime.now().strftime("%Y%m%d_%H%M%S")}.png'
         payload = {
             "head_count_at_time": head_count,
             "image_path": filename,
