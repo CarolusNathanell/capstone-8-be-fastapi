@@ -35,12 +35,12 @@ class DetectionSource:
             )
             self._runners[key] = runner
         print(f"[DETECTION_SOURCE] Runner added for source {id}")
-        camera_url = f"http://localhost:8000/camera/stream/{id}"
+        # camera_url = f"http://localhost:8000/camera/stream/{id}"
         return ProbeResponse(
             exists=exists,
             detail="Source added",
             resolution="720p",
-            url=camera_url,
+            url=url,
             fps=13
         )
             
